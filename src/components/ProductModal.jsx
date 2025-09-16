@@ -100,15 +100,12 @@ export default function ProductModal({
                       key={`priority-${index}`}
                       className="text-[#303c6c] font-[600]"
                     >
-                      {product.name}{" "}
-                      <span>
-                        {productQuantities[product.name] < 50 &&
-                          `- zostało ${productQuantities[product.name]} ${
-                            product.packagingMethod === "kg"
-                              ? product.packagingMethod
-                              : ""
-                          }`}
-                      </span>
+                      {product.name}
+                      {productQuantities[product.name] < 20
+                        ? ` - zostało ${productQuantities[product.name]}${
+                            product.packagingMethod === "kg" ? " kg" : ""
+                          }`
+                        : ""}
                     </option>
                   ) : (
                     <option
@@ -117,8 +114,7 @@ export default function ProductModal({
                       className="text-slate font-[600]"
                       disabled
                     >
-                      {product.name}
-                      <span> - wyprzedane</span>
+                      {product.name} - wyprzedane
                     </option>
                   )
                 )}
@@ -137,8 +133,12 @@ export default function ProductModal({
                         key={`regular-${index}`}
                         className="text-[#303c6c] font-[600]"
                       >
-                        {product.name} - zostało{" "}
-                        {productQuantities[product.name]}{" "}
+                        {product.name}
+                        {productQuantities[product.name] < 20
+                          ? ` - zostało ${productQuantities[product.name]}${
+                              product.packagingMethod === "kg" ? " kg" : ""
+                            }`
+                          : ""}
                         {product.packagingMethod === "kg" &&
                           product.packagingMethod}
                       </option>
@@ -168,8 +168,12 @@ export default function ProductModal({
                         key={`seasonal-${index}`}
                         className="text-[#303c6c] font-[600]"
                       >
-                        {product.name} - zostało{" "}
-                        {productQuantities[product.name]}{" "}
+                        {product.name}
+                        {productQuantities[product.name] < 20
+                          ? ` - zostało ${productQuantities[product.name]}${
+                              product.packagingMethod === "kg" ? " kg" : ""
+                            }`
+                          : ""}
                         {product.packagingMethod === "kg" &&
                           product.packagingMethod}
                       </option>
@@ -201,7 +205,6 @@ export default function ProductModal({
                 onChange={(e) => {
                   setQuantity(e.target.value);
                 }}
-                defaultValue={1}
                 max={productQuantities[currentProduct.name]}
                 step="0.01"
                 required
