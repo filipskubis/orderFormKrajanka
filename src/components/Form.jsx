@@ -73,7 +73,15 @@ export default function Form() {
     };
 
     try {
-      await fetcher("/orders/addPublic", "POST", body);
+      await fetch(`/orders/addPublic`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: body ? JSON.stringify(body) : null,
+        credentials: "include",
+        keepalive: true,
+      });
       navigate(`/sukces/${id}`);
     } catch (err) {
       addAlert("error", err);
