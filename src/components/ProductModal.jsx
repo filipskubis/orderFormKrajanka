@@ -3,11 +3,11 @@ import { useEffect, useState, useRef } from "react";
 import { CirclePlus, CircleMinus } from "lucide-react";
 import fetcher from "../helpers/fetcher";
 // import Spinner from './Spinner';
-
 export default function ProductModal({
-  data,
+  productData,
+  formData,
   setProductModal,
-  handleAddProduct,
+  setProducts,
 }) {
   const [quantity, setQuantity] = useState(1);
   const modalRef = useRef(null);
@@ -15,33 +15,84 @@ export default function ProductModal({
   const [prioritizedProducts, setPrioritizedProducts] = useState([]);
   const [productTotals, setProductTotals] = useState([]);
   const [productQuantities, setProductQuantities] = useState({});
+  const [availableProducts, setAvailableProducts] = useState([]);
+
+  const [seasonalProducts, setSeasonalProducts] = useState([]);
+  const [permanentProducts, setPermanentProducts] = useState([]);
+
+  useEffect(() => {
+    if (productData && prioritizedProducts) {
+      const seasonal = productData.filter(
+        (product) =>
+          product.seasonal &&
+          !prioritizedProducts.some((p) => p.name === product.name)
+      );
+      setSeasonalProducts(seasonal);
+      const permanent = productData.filter((product) => {
+        return (
+          !product.seasonal &&
+          !prioritizedProducts.some((p) => p.name === product.name)
+        );
+      });
+      setPermanentProducts(permanent);
+    }
+  }, [productData, prioritizedProducts]);
 
   useEffect(() => {
     async function getData() {
       const [prioritizedProductsData, productTotals] = await Promise.all([
         fetcher("/products/getFavorite"),
-        fetcher("/products/getProductTotals"),
+        fetcher(`/products/getProductTotals/${formData.date}`),
       ]);
+
       setPrioritizedProducts(prioritizedProductsData);
       setProductTotals(productTotals);
     }
+    if (formData) {
+      setAvailableProducts(Object.keys(formData.stock));
+      getData();
+    }
+  }, [formData]);
 
-    getData();
-  }, []);
+  function handleAddProduct(e, maxQuantity) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const name = e.target.querySelector("#productSelect").value;
+    if (name === "default") return;
+    const quantity = e.target.querySelector("#quantity").value;
+    const product = productData.find((product) => product.name === name);
+    const uniqueId = crypto.randomUUID();
+    const productObject = {
+      name,
+      id: uniqueId,
+      quantity: quantity,
+      price: product.price,
+      packagingMethod: product.packagingMethod,
+      maxQuantity,
+    };
+    setProducts((products) => [...products, productObject]);
+    setProductModal(false);
+  }
 
   useEffect(() => {
-    if (data && productTotals.length !== 0) {
+    if (productData && productTotals.length !== 0) {
       let quantities = {};
-      data.forEach(({ name, note }) => {
-        quantities[name] = note.stock ? note.stock - productTotals[name] : 0;
+      productData.forEach(({ name }) => {
+        const onStock = formData.stock[name] ? formData.stock[name] : 0;
+        const ordered = productTotals[name] ? productTotals[name] : 0;
+        quantities[name] = onStock - ordered;
       });
       setProductQuantities(quantities);
     }
-  }, [productTotals, data]);
+  }, [productTotals, productData]);
 
   function handleChange(e) {
     const name = e.target.value;
-    const product = data.find((product) => product.name === name);
+    if (e.target.value === "default") {
+      return;
+    }
+    const product = productData.find((product) => product.name === name);
     setCurrentProduct(product);
   }
 
@@ -58,12 +109,12 @@ export default function ProductModal({
     };
   }, [setProductModal]);
 
-  if (data) {
+  if (productData) {
     return (
-      <div className="absolute flex inset-0 justify-center pt-[30%] w-screen h-screen">
+      <div className="absolute flex inset-0 justify-center top-[30%] w-screen h-screen md:text-xl">
         <div className="fixed w-[9999px] h-[9999px] top-0 left-0 backdrop-blur-sm z-[9998]"></div>
         <form
-          className="relative w-[80vw] h-[35vh] bg-white shadow-xl border-[1px] border-darkcoral rounded-lg z-[9999] p-4 pt-8 flex flex-col gap-4"
+          className="relative w-[80vw] h-[35vh] md:w-[60vw] xl:w-[50vw] bg-white shadow-xl border-[1px] border-darkcoral rounded-lg z-[9999] p-4 pt-8 flex flex-col gap-4"
           onSubmit={(e) =>
             handleAddProduct(e, productQuantities[currentProduct.name])
           }
@@ -78,7 +129,7 @@ export default function ProductModal({
             <X />
           </button>
           <div className="flex flex-col gap-2 items-center">
-            <label htmlFor="productSelect" className="text-lg">
+            <label htmlFor="productSelect" className="text-lg md:text-xl">
               Produkt:
             </label>
             <select
@@ -88,7 +139,7 @@ export default function ProductModal({
               required
               className="w-full p-2 border-[1px] border-[#CCCCCC]  noScrollbar"
             >
-              <option value=""> - Wybierz z listy -</option>
+              <option value="default"> - Wybierz z listy -</option>
               <optgroup
                 label="Najczęściej zamawiane"
                 className="text-[#f28a72]"
@@ -101,7 +152,7 @@ export default function ProductModal({
                       className="text-[#303c6c] font-[600]"
                     >
                       {product.name}
-                      {productQuantities[product.name] < 20
+                      {productQuantities[product.name] < 150
                         ? ` - zostało ${productQuantities[product.name]}${
                             product.packagingMethod === "kg" ? " kg" : ""
                           }`
@@ -114,27 +165,23 @@ export default function ProductModal({
                       className="text-slate font-[600]"
                       disabled
                     >
-                      {product.name} - wyprzedane
+                      {product.name} - niedostępne
                     </option>
                   )
                 )}
               </optgroup>
-              <optgroup label="Stała oferta" className="text-[#f28a72]">
-                {data
-                  .filter(
-                    (product) =>
-                      !product.seasonal &&
-                      !prioritizedProducts.some((p) => p.name === product.name)
-                  )
-                  .map((product, index) =>
-                    productQuantities[product.name] > 0 ? (
+              {permanentProducts.length > 0 ? (
+                <optgroup label="Stała oferta" className="text-[#f28a72]">
+                  {permanentProducts.map((product, index) =>
+                    productQuantities[product.name] > 0 &&
+                    availableProducts.includes(product.name) ? (
                       <option
                         value={product.name}
                         key={`regular-${index}`}
                         className="text-[#303c6c] font-[600]"
                       >
                         {product.name}
-                        {productQuantities[product.name] < 20
+                        {productQuantities[product.name] < 150
                           ? ` - zostało ${productQuantities[product.name]}${
                               product.packagingMethod === "kg" ? " kg" : ""
                             }`
@@ -149,19 +196,15 @@ export default function ProductModal({
                         className="text-slate font-[600]"
                         disabled
                       >
-                        {product.name} - wyprzedane
+                        {product.name} - niedostępne
                       </option>
                     )
                   )}
-              </optgroup>
-              <optgroup label="Sezonowe" className="text-[#f28a72]">
-                {data
-                  .filter(
-                    (product) =>
-                      product.seasonal &&
-                      !prioritizedProducts.some((p) => p.name === product.name)
-                  )
-                  .map((product, index) =>
+                </optgroup>
+              ) : null}
+              {seasonalProducts.length > 0 ? (
+                <optgroup label="Sezonowe" className="text-[#f28a72]">
+                  {seasonalProducts.map((product, index) =>
                     productQuantities[product.name] > 0 ? (
                       <option
                         value={product.name}
@@ -169,7 +212,7 @@ export default function ProductModal({
                         className="text-[#303c6c] font-[600]"
                       >
                         {product.name}
-                        {productQuantities[product.name] < 20
+                        {productQuantities[product.name] < 150
                           ? ` - zostało ${productQuantities[product.name]}${
                               product.packagingMethod === "kg" ? " kg" : ""
                             }`
@@ -184,15 +227,16 @@ export default function ProductModal({
                         className="text-slate font-[600]"
                         disabled
                       >
-                        {product.name} - wyprzedane
+                        {product.name} - niedostępne
                       </option>
                     )
                   )}
-              </optgroup>
+                </optgroup>
+              ) : null}
             </select>
           </div>
           <div className="flex flex-col gap-2 items-center">
-            <label htmlFor="quantity" className="text-lg">
+            <label htmlFor="quantity" className="text-lg md:text-xl">
               Ilość:{" "}
               {currentProduct ? `(${currentProduct.packagingMethod})` : ""}
             </label>

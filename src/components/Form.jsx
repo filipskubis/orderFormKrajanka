@@ -1,27 +1,33 @@
 /* eslint-disable no-unused-vars */
 import { useContext, useEffect, useRef, useState } from "react";
-import { CircleMinus, CirclePlus, ClipboardList } from "lucide-react";
+import { CircleMinus, CirclePlus } from "lucide-react";
 import PhoneNumberInput from "./PhoneNumberInput.jsx";
 import fetcher from "../helpers/fetcher.js";
 import useSWR from "swr";
 import ProductModal from "./ProductModal.jsx";
+import Expired from "./Expired.jsx";
 import Big from "big.js";
-import DatePicker from "./DatePicker.jsx";
+import Spinner from "./Spinner.jsx";
 import HoldButton from "./HoldButton.jsx";
 import { AlertContext } from "../contexts/AlertContext.jsx";
+import { useNavigate, useParams } from "react-router-dom";
 Big.DP = 2;
 Big.RM = Big.roundHalfUp;
 
 export default function Form() {
-  const { data } = useSWR("/products/get", fetcher);
-  const { data: orderNumber } = useSWR("/orders/getOrderNumber", fetcher);
+  const { id } = useParams();
+  const { data: formData, isLoading } = useSWR(
+    id ? `/forms/get/${id}` : null,
+    fetcher
+  );
+  const { data: productData } = useSWR("/products/get", fetcher);
+
   const [products, setProducts] = useState([]);
   const [productModal, setProductModal] = useState(false);
   const [payment, setPayment] = useState("Przelew/BLIK");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-
-  const [date, setDate] = useState(null);
+  const navigate = useNavigate();
 
   const { addAlert } = useContext(AlertContext);
 
@@ -40,47 +46,38 @@ export default function Form() {
   const handleTextareaChange = (e) => {
     setNote(e.target.value);
   };
-  const handleDateChange = (newDate) => {
-    console.log(newDate);
-    setDate(newDate);
-  };
 
   async function handleFormSubmit(e) {
     e.preventDefault();
-    const productsNoTotal = products.map(({ total, ...rest }) => rest);
-    let formattedDate = null;
-    if (date) {
-      formattedDate = date.format("DD-MM-YYYY");
-    } else {
-      let newDate = new Date();
-      formattedDate = newDate.format("DD-MM-YYYY");
+    const sum = products
+      .reduce(
+        (acc, product) => acc.plus(Big(product.quantity).times(product.price)),
+        Big(0)
+      )
+      .toFixed(2);
+
+    if (sum < 80) {
+      addAlert("info", " Minimalna wartość zamówienia to 80zł.");
+      return;
     }
+    const productsNoTotal = products.map(({ total, ...rest }) => rest);
 
     const body = {
       address,
       phone,
       paymentMethod: payment,
       products: productsNoTotal,
-      orderNumber,
       note: note || null,
-      date: formattedDate,
+      date: formData.date,
       time: null,
     };
 
     try {
-      const response = await fetcher("/orders/addPublic", "POST", body);
-      resetForm();
-      addAlert("success", response);
+      await fetcher("/orders/addPublic", "POST", body);
+      navigate(`/sukces/${id}`);
     } catch (err) {
       addAlert("error", err);
     }
-  }
-
-  function resetForm() {
-    setProducts([]);
-    setAddress("");
-    setPhone("");
-    setDate(null);
   }
 
   function handleAdd(id, maxQuantity) {
@@ -113,43 +110,31 @@ export default function Form() {
       setProducts(newProducts);
     }
   }
-
-  function handleAddProduct(e, maxQuantity) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    console.log(maxQuantity);
-
-    const name = e.target.querySelector("#productSelect").value;
-    const quantity = e.target.querySelector("#quantity").value;
-    const product = data.find((product) => product.name === name);
-    const uniqueId = crypto.randomUUID();
-    const productObject = {
-      name,
-      id: uniqueId,
-      quantity: quantity,
-      price: product.price,
-      packagingMethod: product.packagingMethod,
-      maxQuantity,
-    };
-    setProducts([...products, productObject]);
-    setProductModal(false);
-  }
+  if (isLoading || !id) return <Spinner />;
+  if (!formData) return <Expired />;
   return (
     <>
       {productModal ? (
         <ProductModal
-          data={data}
+          productData={productData}
+          formData={formData}
           setProductModal={setProductModal}
-          handleAddProduct={handleAddProduct}
+          setProducts={setProducts}
         />
       ) : null}
       <form
-        className="w-full h-fit bg-white p-4 rounded-lg flex flex-col gap-8 pb-12 tablet:!text-xl"
+        className="w-full h-full xl:h-fit bg-white xl:shadow-xl p-4 rounded-lg flex flex-col gap-8 pb-12 md:text-[2.5vh] md:justify-between xl:text-xl"
         onSubmit={handleFormSubmit}
       >
         <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <p className="text-3xl"> Złóż zamówienie</p>
+          <p className="text-3xl md:text-[48px] xl:text-[36px]">
+            {" "}
+            Złóż zamówienie
+          </p>
+          <p className="text-xl opacity-[0.8] md:text-2xl">
+            {" "}
+            {formData.city} {formData.date}
+          </p>
         </div>
         <div className="relative flex flex-col gap-2 w-full before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
           <p> Produkty: </p>
@@ -162,7 +147,10 @@ export default function Form() {
             className="flex ml-1 gap-2 w-fit items-center"
           >
             <CirclePlus color="#f28a72" />
-            <p className="text-coral"> Dodaj Produkt</p>
+            <p className="text-coral md:text-[2.5vh] xl:text-xl">
+              {" "}
+              Dodaj Produkt
+            </p>
           </button>
           {products.length > 0 ? (
             <div className="gap-4 p-1 grid grid-cols-[1.5fr_1fr_1fr_1fr] text-left">
@@ -180,13 +168,11 @@ export default function Form() {
             ) => (
               <div
                 key={id}
-                className="relative border-[1px] rounded-md p-1 gap-4 grid grid-cols-[2fr_1fr_1.5fr_1fr] items-start text-start"
+                className="relative border-[1px] rounded-md p-1 gap-4 grid grid-cols-[1.5fr_1fr_1fr_1fr] items-start text-start"
               >
-                <p className="break-words col-span-1">{`${
-                  index + 1
-                }. ${name}`}</p>
+                <p className="break-words">{`${index + 1}. ${name}`}</p>
                 <p>{price >= 1 ? `${price} zł` : `${price * 100} gr`}</p>
-                <div className="flex flex-col gap-2 items-center">
+                <div className="flex flex-col gap-2 items-start">
                   {quantity} ({packagingMethod})
                   <div className="flex gap-2">
                     <button
@@ -195,7 +181,7 @@ export default function Form() {
                         handleAdd(id, maxQuantity);
                       }}
                     >
-                      <CirclePlus />
+                      <CirclePlus className="md:w-[28px] md:h-auto" />
                     </button>
                     <HoldButton
                       click={() => {
@@ -205,7 +191,7 @@ export default function Form() {
                         removeProduct(id);
                       }}
                     >
-                      <CircleMinus />
+                      <CircleMinus className="md:w-[28px] md:h-auto" />
                     </HoldButton>
                   </div>
                 </div>
@@ -255,8 +241,8 @@ export default function Form() {
             }}
           />
         </div>
-        <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <p> Płatność: </p>
+        <div className="relative flex flex-col md:text-lg gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+          <p className="md:text-xl"> Płatność: </p>
           <div className="radio-input ">
             <label className="label bg-[#f28a7270] rounded-xl ">
               <input
@@ -311,10 +297,15 @@ export default function Form() {
           />
         </div>
 
-        <DatePicker date={date} handleDateChange={handleDateChange} />
+        {formData.note ? (
+          <div className="relative flex opacity-[0.8] text-[#a01a1a] font-bold flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            {" "}
+            {formData.note}{" "}
+          </div>
+        ) : null}
 
         <button
-          className="text-xl! bg-[#f28a72]! p-4! shadow-md! rounded-lg min-w-[50%] self-center mt-[2rem]! tablet:text-2xl"
+          className="text-xl! md:text-2xl! bg-[#f28a72]! p-4! shadow-md! rounded-lg min-w-[50%] self-center mt-[2rem]! tablet:text-2xl"
           type="submit"
         >
           Złóż zamówienie

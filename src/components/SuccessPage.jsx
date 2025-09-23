@@ -1,6 +1,7 @@
-import "../success.css";
-import { Link } from "react-router-dom";
+import "../styles/success.css";
+import { Link, useParams } from "react-router-dom";
 export default function SuccessPage() {
+  const { id } = useParams();
   return (
     <div className="bg-white grid place-content-center pb-[10%] inset-0 w-full h-full">
       <div class="card">
@@ -34,7 +35,7 @@ export default function SuccessPage() {
             <p class="message">Zamówienie przyjęte do realizacji.</p>
           </div>
           <div class="actions">
-            <Link to="/" class="track">
+            <Link to={`/${id}`} class="track">
               Zamów ponownie
             </Link>
           </div>

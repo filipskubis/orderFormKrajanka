@@ -17,9 +17,6 @@ export default {
       boxShadow: {
         "inner-strong": "inset 0 0 4px rgba(0, 0, 0, 0.2)",
       },
-      screens: {
-        tablet: "600px",
-      },
     },
   },
   plugins: [],
