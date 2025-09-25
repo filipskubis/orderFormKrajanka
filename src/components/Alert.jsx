@@ -56,7 +56,7 @@ export default function Alert({ type = "info", message, handleClick }) {
         ></path>
       </svg>
       <p
-        className="text-sm md:text-lg xl:text-xl font-semibold"
+        className="text-sm md:text-lg xl:text-xl font-semibold w-[80%]"
         style={{
           color: "inherit",
         }}

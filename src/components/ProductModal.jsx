@@ -31,7 +31,8 @@ export default function ProductModal({
       const permanent = productData.filter((product) => {
         return (
           !product.seasonal &&
-          !prioritizedProducts.some((p) => p.name === product.name)
+          !prioritizedProducts.some((p) => p.name === product.name) &&
+          !product.name.includes("rabatem")
         );
       });
       setPermanentProducts(permanent);
@@ -87,6 +88,7 @@ export default function ProductModal({
     }
   }, [productTotals, productData]);
 
+  console.log(productQuantities);
   function handleChange(e) {
     const name = e.target.value;
     if (e.target.value === "default") {
@@ -152,7 +154,11 @@ export default function ProductModal({
                       className="text-[#303c6c] font-[600]"
                     >
                       {product.name}
-                      {productQuantities[product.name] < 150
+                      {productQuantities[product.name] <
+                      Math.min(
+                        Math.ceil(formData.stock[product.name] * 0.2),
+                        150
+                      )
                         ? ` - zostało ${productQuantities[product.name]}${
                             product.packagingMethod === "kg" ? " kg" : ""
                           }`
@@ -181,7 +187,11 @@ export default function ProductModal({
                         className="text-[#303c6c] font-[600]"
                       >
                         {product.name}
-                        {productQuantities[product.name] < 150
+                        {productQuantities[product.name] <
+                        Math.min(
+                          Math.ceil(formData.stock[product.name] * 0.2),
+                          150
+                        )
                           ? ` - zostało ${productQuantities[product.name]}${
                               product.packagingMethod === "kg" ? " kg" : ""
                             }`
@@ -212,7 +222,11 @@ export default function ProductModal({
                         className="text-[#303c6c] font-[600]"
                       >
                         {product.name}
-                        {productQuantities[product.name] < 150
+                        {productQuantities[product.name] <
+                        Math.min(
+                          Math.ceil(formData.stock[product.name] * 0.2),
+                          150
+                        )
                           ? ` - zostało ${productQuantities[product.name]}${
                               product.packagingMethod === "kg" ? " kg" : ""
                             }`

@@ -24,7 +24,7 @@ export default function Form() {
 
   const [products, setProducts] = useState([]);
   const [productModal, setProductModal] = useState(false);
-  const [payment, setPayment] = useState("Przelew/BLIK");
+  const [payment, setPayment] = useState("Za pobraniem");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const navigate = useNavigate();
@@ -56,8 +56,15 @@ export default function Form() {
       )
       .toFixed(2);
 
-    if (sum < 80) {
-      addAlert("info", " Minimalna wartość zamówienia to 80zł.");
+    let eggCheck = false;
+    products.forEach((p) => {
+      if (p.name.toLowerCase().includes("jaja") && p.quantity >= 60) {
+        eggCheck = true;
+      }
+    });
+
+    if (sum < 80 && !eggCheck) {
+      addAlert("info", "Minimalna wartość zamówienia to 80zł lub 60 jajek.");
       return;
     }
     const productsNoTotal = products.map(({ total, ...rest }) => rest);
@@ -244,44 +251,15 @@ export default function Form() {
         <div className="relative flex flex-col md:text-lg gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
           <p className="md:text-xl"> Płatność: </p>
           <div className="radio-input ">
-            <label className="label bg-[#f28a7270] rounded-xl ">
-              <input
-                type="radio"
-                id="value-1"
-                checked={payment === "Przelew/BLIK"}
-                onChange={(e) => {
-                  setPayment(e.target.value);
-                }}
-                name="value-radio"
-                value="Przelew/BLIK"
-              />
-              <p className="text">Przelew/BLIK</p>
-            </label>
             <label className="label checked:border-[1px] checked:border-[#f28a72] bg-[#f28a7270] rounded-xl">
               <input
                 type="radio"
                 id="value-2"
                 checked={payment === "Za pobraniem"}
-                onChange={(e) => {
-                  setPayment(e.target.value);
-                }}
                 name="value-radio"
                 value="Za pobraniem"
               />
-              <p className="text ">Za pobraniem</p>
-            </label>
-            <label className="label bg-[#f28a7270] rounded-xl">
-              <input
-                type="radio"
-                id="value-3"
-                checked={payment === "Gotówka/Przelew"}
-                onChange={(e) => {
-                  setPayment(e.target.value);
-                }}
-                name="value-radio"
-                value="Gotówka/Przelew"
-              />
-              <p className="text">Gotówka/Przelew</p>
+              <p className="text ">Za pobraniem gotówką</p>
             </label>
           </div>
         </div>
