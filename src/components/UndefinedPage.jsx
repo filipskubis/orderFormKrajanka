@@ -2,7 +2,7 @@ import "../styles/UndefinedPage.css";
 
 export default function UndefinedPage() {
   return (
-    <div className="fixed inset-0 grid place-content-center p-4 h-screen w-screen overflow-hidden bg-[#fbe8a6]!">
+    <div className="fixed inset-0 grid place-content-center p-4 h-screen w-screen overflow-hidden bg-[#fbe8a6">
       <div className="main_wrapper">
         <div className="main">
           <div className="antenna">

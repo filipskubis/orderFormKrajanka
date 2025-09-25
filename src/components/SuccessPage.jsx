@@ -3,8 +3,8 @@ import { Link, useParams } from "react-router-dom";
 export default function SuccessPage() {
   const { id } = useParams();
   return (
-    <div className="bg-white grid place-content-center pb-[10%] inset-0 w-full h-full">
-      <div class="card">
+    <div className="bg-white grid place-content-center inset-0 w-screen h-screen ">
+      <div class="card translate-y-[-25%]">
         <div class="header">
           <div class="image">
             <svg

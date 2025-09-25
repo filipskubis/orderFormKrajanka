@@ -118,7 +118,9 @@ export default function Form() {
     }
   }
   if (isLoading || !id) return <Spinner />;
-  if (!formData) return <Expired />;
+  if (!formData) {
+    navigate("/wyczerpane");
+  }
   return (
     <>
       {productModal ? (

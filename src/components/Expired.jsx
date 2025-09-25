@@ -3,8 +3,8 @@ import "../styles/expired.css";
 
 export default function Expired() {
   return (
-    <div className="bg-white grid place-content-center pb-[10%] inset-0 w-full h-full">
-      <div class="cardExpired">
+    <div className="bg-white grid place-content-center inset-0 w-screen h-screen">
+      <div class="cardExpired translate-y-[-25%]">
         <div class="headerExpired">
           <div class="imageExpired">
             <svg
