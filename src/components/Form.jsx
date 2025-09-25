@@ -119,178 +119,182 @@ export default function Form() {
   }
   if (isLoading || !id) return <Spinner />;
   if (!formData) {
-    navigate("/wyczerpane");
+    return navigate("/wyczerpane");
   }
-  return (
-    <>
-      {productModal ? (
-        <ProductModal
-          productData={productData}
-          formData={formData}
-          setProductModal={setProductModal}
-          setProducts={setProducts}
-        />
-      ) : null}
-      <form
-        className="w-full h-full xl:h-fit bg-white xl:shadow-xl p-4 rounded-lg flex flex-col gap-8 pb-12 md:text-[2.5vh] md:justify-between xl:text-xl"
-        onSubmit={handleFormSubmit}
-      >
-        <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <p className="text-3xl md:text-[48px] xl:text-[36px]">
-            {" "}
-            Złóż zamówienie
-          </p>
-          <p className="text-xl opacity-[0.8] md:text-2xl">
-            {" "}
-            {formData.city} {formData.date}
-          </p>
-        </div>
-        <div className="relative flex flex-col gap-2 w-full before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <p> Produkty: </p>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setProductModal(true);
-            }}
-            className="flex ml-1 gap-2 w-fit items-center"
-          >
-            <CirclePlus color="#f28a72" />
-            <p className="text-coral md:text-[2.5vh] xl:text-xl">
-              {" "}
-              Dodaj Produkt
-            </p>
-          </button>
-          {products.length > 0 ? (
-            <div className="gap-4 p-1 grid grid-cols-[1.5fr_1fr_1fr_1fr] text-left">
-              <p className="col-span-1">Nazwa:</p>
-              <p>Cena:</p>
-              <p>Ilość:</p>
-              <p>Razem:</p>
-            </div>
-          ) : null}
-
-          {products.map(
-            (
-              { id, name, price, quantity, packagingMethod, maxQuantity },
-              index
-            ) => (
-              <div
-                key={id}
-                className="relative border-[1px] rounded-md p-1 gap-4 grid grid-cols-[1.5fr_1fr_1fr_1fr] items-start text-start"
-              >
-                <p className="break-words">{`${index + 1}. ${name}`}</p>
-                <p>{price >= 1 ? `${price} zł` : `${price * 100} gr`}</p>
-                <div className="flex flex-col gap-2 items-start">
-                  {quantity} ({packagingMethod})
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleAdd(id, maxQuantity);
-                      }}
-                    >
-                      <CirclePlus className="md:w-[28px] md:h-auto" />
-                    </button>
-                    <HoldButton
-                      click={() => {
-                        handleSubtract(id);
-                      }}
-                      hold={() => {
-                        removeProduct(id);
-                      }}
-                    >
-                      <CircleMinus className="md:w-[28px] md:h-auto" />
-                    </HoldButton>
-                  </div>
-                </div>
-                <p>{`${String(Big(quantity).times(price))} zł`}</p>
-              </div>
-            )
-          )}
-
-          {products.length > 0 ? (
-            <div className="gap-4 p-1 flex w-full justify-end">
-              <p className="border-[2px] border-slate p-1 rounded-md flex gap-2 ">
-                <p> Suma: </p>
-                <p>
-                  {String(
-                    products
-                      .reduce(
-                        (acc, product) =>
-                          acc.plus(Big(product.quantity).times(product.price)),
-                        Big(0)
-                      )
-                      .toFixed(2) // Round the final result to 2 decimal places
-                  )}{" "}
-                  zł
-                </p>
-              </p>
-            </div>
-          ) : null}
-        </div>
-        <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <label htmlFor="address"> Adres: </label>
-          <input
-            type="text"
-            id="address"
-            value={address}
-            onChange={(e) => {
-              setAddress(e.target.value);
-            }}
-            required
-            className="p-1 rounded-lg focus:outline-none border-[1px] border-[#CCCCCC]"
+  if (formData) {
+    return (
+      <>
+        {productModal ? (
+          <ProductModal
+            productData={productData}
+            formData={formData}
+            setProductModal={setProductModal}
+            setProducts={setProducts}
           />
-        </div>
-        <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <PhoneNumberInput
-            value={phone}
-            change={(value) => {
-              setPhone(value);
-            }}
-          />
-        </div>
-        <div className="relative flex flex-col md:text-lg gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-          <p className="md:text-xl"> Płatność: </p>
-          <div className="radio-input ">
-            <label className="label checked:border-[1px] checked:border-[#f28a72] bg-[#f28a7270] rounded-xl">
-              <input
-                type="radio"
-                id="value-2"
-                checked={payment === "Za pobraniem"}
-                name="value-radio"
-                value="Za pobraniem"
-              />
-              <p className="text ">Za pobraniem gotówką</p>
-            </label>
-          </div>
-        </div>
-        <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4 ">
-          <p>Dodatkowe informacje: </p>
-          <textarea
-            maxLength="100"
-            rows="1"
-            value={note}
-            onChange={handleTextareaChange}
-            ref={textarea}
-            className="text-black text-lg focus:outline-none bg-transparent w-full p-2 rounded-lg text-wrap h-fit resize-none no-scrollbar border-[1px] border-[#f28a72]"
-          />
-        </div>
-
-        {formData.note ? (
-          <div className="relative flex opacity-[0.8] text-[#a01a1a] font-bold flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
-            {" "}
-            {formData.note}{" "}
-          </div>
         ) : null}
-
-        <button
-          className="text-xl! md:text-2xl! bg-[#f28a72]! p-4! shadow-md! rounded-lg min-w-[50%] self-center mt-[2rem]! tablet:text-2xl"
-          type="submit"
+        <form
+          className="w-full h-full xl:h-fit bg-white xl:shadow-xl p-4 rounded-lg flex flex-col gap-8 pb-12 md:text-[2.5vh] md:justify-between xl:text-xl"
+          onSubmit={handleFormSubmit}
         >
-          Złóż zamówienie
-        </button>
-      </form>
-    </>
-  );
+          <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            <p className="text-3xl md:text-[48px] xl:text-[36px]">
+              {" "}
+              Złóż zamówienie
+            </p>
+            <p className="text-xl opacity-[0.8] md:text-2xl">
+              {" "}
+              {formData.city} {formData.date}
+            </p>
+          </div>
+          <div className="relative flex flex-col gap-2 w-full before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            <p> Produkty: </p>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setProductModal(true);
+              }}
+              className="flex ml-1 gap-2 w-fit items-center"
+            >
+              <CirclePlus color="#f28a72" />
+              <p className="text-coral md:text-[2.5vh] xl:text-xl">
+                {" "}
+                Dodaj Produkt
+              </p>
+            </button>
+            {products.length > 0 ? (
+              <div className="gap-4 p-1 grid grid-cols-[1.5fr_1fr_1fr_1fr] text-left">
+                <p className="col-span-1">Nazwa:</p>
+                <p>Cena:</p>
+                <p>Ilość:</p>
+                <p>Razem:</p>
+              </div>
+            ) : null}
+
+            {products.map(
+              (
+                { id, name, price, quantity, packagingMethod, maxQuantity },
+                index
+              ) => (
+                <div
+                  key={id}
+                  className="relative border-[1px] rounded-md p-1 gap-4 grid grid-cols-[1.5fr_1fr_1fr_1fr] items-start text-start"
+                >
+                  <p className="break-words">{`${index + 1}. ${name}`}</p>
+                  <p>{price >= 1 ? `${price} zł` : `${price * 100} gr`}</p>
+                  <div className="flex flex-col gap-2 items-start">
+                    {quantity} ({packagingMethod})
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleAdd(id, maxQuantity);
+                        }}
+                      >
+                        <CirclePlus className="md:w-[28px] md:h-auto" />
+                      </button>
+                      <HoldButton
+                        click={() => {
+                          handleSubtract(id);
+                        }}
+                        hold={() => {
+                          removeProduct(id);
+                        }}
+                      >
+                        <CircleMinus className="md:w-[28px] md:h-auto" />
+                      </HoldButton>
+                    </div>
+                  </div>
+                  <p>{`${String(Big(quantity).times(price))} zł`}</p>
+                </div>
+              )
+            )}
+
+            {products.length > 0 ? (
+              <div className="gap-4 p-1 flex w-full justify-end">
+                <p className="border-[2px] border-slate p-1 rounded-md flex gap-2 ">
+                  <p> Suma: </p>
+                  <p>
+                    {String(
+                      products
+                        .reduce(
+                          (acc, product) =>
+                            acc.plus(
+                              Big(product.quantity).times(product.price)
+                            ),
+                          Big(0)
+                        )
+                        .toFixed(2) // Round the final result to 2 decimal places
+                    )}{" "}
+                    zł
+                  </p>
+                </p>
+              </div>
+            ) : null}
+          </div>
+          <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            <label htmlFor="address"> Adres: </label>
+            <input
+              type="text"
+              id="address"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+              }}
+              required
+              className="p-1 rounded-lg focus:outline-none border-[1px] border-[#CCCCCC]"
+            />
+          </div>
+          <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            <PhoneNumberInput
+              value={phone}
+              change={(value) => {
+                setPhone(value);
+              }}
+            />
+          </div>
+          <div className="relative flex flex-col md:text-lg gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+            <p className="md:text-xl"> Płatność: </p>
+            <div className="radio-input ">
+              <label className="label checked:border-[1px] checked:border-[#f28a72] bg-[#f28a7270] rounded-xl">
+                <input
+                  type="radio"
+                  id="value-2"
+                  checked={payment === "Za pobraniem"}
+                  name="value-radio"
+                  value="Za pobraniem"
+                />
+                <p className="text ">Za pobraniem gotówką</p>
+              </label>
+            </div>
+          </div>
+          <div className="relative flex flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4 ">
+            <p>Dodatkowe informacje: </p>
+            <textarea
+              maxLength="100"
+              rows="1"
+              value={note}
+              onChange={handleTextareaChange}
+              ref={textarea}
+              className="text-black text-lg focus:outline-none bg-transparent w-full p-2 rounded-lg text-wrap h-fit resize-none no-scrollbar border-[1px] border-[#f28a72]"
+            />
+          </div>
+
+          {formData.note ? (
+            <div className="relative flex opacity-[0.8] text-[#a01a1a] font-bold flex-col gap-1 before:absolute before:content-[''] before:w-full before:h-[2px] before:bg-[#CCCCCC] before:-bottom-4">
+              {" "}
+              {formData.note}{" "}
+            </div>
+          ) : null}
+
+          <button
+            className="text-xl! md:text-2xl! bg-[#f28a72]! p-4! shadow-md! rounded-lg min-w-[50%] self-center mt-[2rem]! tablet:text-2xl"
+            type="submit"
+          >
+            Złóż zamówienie
+          </button>
+        </form>
+      </>
+    );
+  }
 }
